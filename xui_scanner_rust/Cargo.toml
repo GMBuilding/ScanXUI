@@ -1,0 +1,18 @@
+[package]
+name = "xui_scanner_rust"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-std = "1.10"
+reqwest = "0.11"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+
+[[bin]]
+edition = "2021"
+name = "xui_scanner_rust"
+path = "src/main.rs"

