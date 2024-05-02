@@ -20,14 +20,10 @@ def get_ip_info(ip):
         pass
     return 'N/A'
 
-with open("results.txt", "r") as file:
+with open("ips.txt", "r") as file:
     for line in file:
         # 提取IP地址
-        parts = line.split("Host: ")
-        if len(parts) < 2:
-            print("Invalid line format:", line)
-            continue
-        ip = parts[1].split(" ")[0]
+        ip = line.strip()
         url = "http://" + ip + ":54321/login"
 
         try:
