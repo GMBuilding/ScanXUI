@@ -6,10 +6,12 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 )
 
 const (
-	concurrency = 100
+	concurrency = 128
+	timeout     = 1 * time.Second
 )
 
 func main() {
@@ -34,8 +36,13 @@ func main() {
 			defer wg.Done()
 			defer func() { <-semaphore }() // 释放一个信号量
 
+			// 创建带超时的 HTTP 客户端
+			client := http.Client{
+				Timeout: timeout,
+			}
+
 			// 请求 IP:54321
-			resp, err := http.Get("http://" + ip + ":54321")
+			resp, err := client.Get("http://" + ip + ":54321")
 			if err != nil {
 				fmt.Printf("Error fetching %s: %s\n", ip, err)
 				return

@@ -1,7 +1,7 @@
 #  -*- coding: UTF-8 -*-
 
 import requests
-timeout = (3, 3)
+timeout = (1, 1)
 
 def check(ip):
 	try: 
