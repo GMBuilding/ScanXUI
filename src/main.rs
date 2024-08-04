@@ -28,7 +28,7 @@ async fn test_one_ip(ip: String) -> Result<bool, Box<dyn std::error::Error>> {
     headers.insert("Priority", "u=0".parse().unwrap());
 
     let url = "http://".to_string() + ip.as_str() + ":54321/login";
-    println!("{}",  url);
+ //   println!("{}",  url);
     let client = Client::new();
     let request = client.post(url).body("username=admin&password=admin").headers(headers);
 
