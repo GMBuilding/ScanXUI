@@ -32,7 +32,7 @@ async fn test_one_ip(ip: String) -> Result<bool, Box<dyn std::error::Error>> {
     let client = Client::new();
     let request = client.post(url).body("username=admin&password=admin").headers(headers);
 
-    let response = timeout(Duration::from_secs(10), request.send()).await??;
+    let response = timeout(Duration::from_secs(3), request.send()).await??;
     if response.status().is_success() {
         println!("{}: 请求成功", ip);
         println!("{}: {}", ip, response.text().await?);
@@ -47,7 +47,7 @@ async fn test_one_ip(ip: String) -> Result<bool, Box<dyn std::error::Error>> {
 async fn main() {
     let ips = read_file();
     iter(ips)
-        .for_each_concurrent(Some(100), |ip| async move {
+        .for_each_concurrent(Some(500), |ip| async move {
             match test_one_ip(ip.clone()).await {
                 Ok(t) => {
                     if t {
